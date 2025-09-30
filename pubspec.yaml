@@ -1,0 +1,22 @@
+name: guitar_tuner_engine
+description: A Flutter package for intelligent guitar tuning with advanced noise filtering and harmonic detection.
+version: 1.0.0
+homepage: https://github.com/JCHCompany/musique-signal-analyzer
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  record: ^6.1.1
+  fftea: ^1.5.0+1
+  permission_handler: ^11.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:

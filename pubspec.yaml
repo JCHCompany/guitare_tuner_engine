@@ -1,5 +1,5 @@
-name: guitar_tuner_engine
-description: A Flutter package for intelligent guitar tuning with advanced noise filtering and harmonic detection.
+name: pitch_detection
+description: A Flutter package for real-time pitch detection using YIN and MPM algorithms, optimized for musical instruments.
 version: 1.0.0
 homepage: https://github.com/JCHCompany/musique-signal-analyzer
 
@@ -8,11 +8,9 @@ environment:
   flutter: ">=3.22.0"
 
 dependencies:
+  fftea: ^1.5.0+1
   flutter:
     sdk: flutter
-  record: ^6.1.1
-  fftea: ^1.5.0+1
-  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:
@@ -20,3 +18,13 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter:
+
+topics:
+  - music
+  - pitch
+  - detection
+  - audio
+  - signal-processing
+  - yin
+  - mpm
+  - tuner

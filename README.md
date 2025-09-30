@@ -1,222 +1,208 @@
-# Guitar Tuner Engine
+# Pitch Detection
 
-A Flutter package for intelligent guitar tuning with advanced noise filtering and harmonic detection.
+A Flutter package for real-time pitch detection using YIN and MPM algorithms, optimized for musical instruments.
 
 ## Features
 
-🎸 **Intelligent Note Detection**: Uses FFT analysis with harmonic validation to distinguish musical notes from noise  
-🔇 **Advanced Noise Filtering**: Filters out taps, clicks, speech, and other non-musical sounds  
-⚙️ **Highly Configurable**: Customizable parameters for different guitars and environments  
-🎯 **Accurate Tuning**: Provides frequency, note name, and cent offset for precise tuning  
-📱 **Flutter Ready**: Easy to integrate into Flutter apps with stream-based API  
+- **Dual Algorithm Support**: YIN and MPM algorithms for robust pitch detection
+- **Real-time Processing**: Optimized for low-latency audio analysis
+- **Post-processing Pipeline**: Anti-octave protection, median filtering, outlier detection
+- **Musical Optimization**: Specifically tuned for guitar and other musical instruments
+- **High Accuracy**: Advanced stabilization and hysteresis for stable results
 
-## Quick Start
+## Installation
 
-Add to your `pubspec.yaml`:
+Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  guitar_tuner_engine: ^1.0.0
+  pitch_detection: ^1.0.0
 ```
 
-Basic usage:
+Then run:
 
-```dart
-import 'package:guitar_tuner_engine/guitar_tuner_engine.dart';
-
-// Create a tuner
-final tuner = GuitarTunerEngine();
-
-// Listen for results
-tuner.tuningResults.listen((result) {
-  if (result.isValid && result.isStable) {
-    print('🎵 Note: ${result.closestNote}');
-    print('📊 Frequency: ${result.frequency!.toStringAsFixed(1)} Hz');
-    print('🎯 Cents: ${result.centsOffset!.toStringAsFixed(1)}¢');
-    print('✅ In tune: ${result.isInTune}');
-  }
-});
-
-// Start tuning
-if (await tuner.startTuning()) {
-  print('🎤 Listening for guitar notes...');
-} else {
-  print('❌ Failed to start - check microphone permissions');
-}
-
-// Stop when done
-await tuner.stopTuning();
-tuner.dispose();
+```bash
+flutter pub get
 ```
 
-## Configuration Presets
+## Usage
 
-Choose the preset that best fits your use case:
-
-```dart
-// For acoustic guitar (default settings)
-final tuner = GuitarTunerEngine(TunerConfig.acoustic());
-
-// For electric guitar (more strict harmonic detection)
-final tuner = GuitarTunerEngine(TunerConfig.electric());
-
-// For bass guitar (lower frequency range)
-final tuner = GuitarTunerEngine(TunerConfig.bass());
-
-// For noisy environments (more conservative detection)
-final tuner = GuitarTunerEngine(TunerConfig.noisyEnvironment());
-
-// For quiet practice (more sensitive detection)
-final tuner = GuitarTunerEngine(TunerConfig.quiet());
-```
-
-## Custom Configuration
-
-Fine-tune the detection algorithm for your specific needs:
+### Basic Pitch Detection
 
 ```dart
-final config = TunerConfig(
-  minAmplitudeThreshold: 0.002,      // Minimum signal strength
-  minHarmonicsRequired: 2,           // Harmonics needed (1-4)
-  harmonicTolerance: 0.05,           // 5% tolerance for harmonics
-  stabilityDuration: Duration(milliseconds: 80), // Stability time
-  minFrequency: 75.0,                // Min frequency (Hz)
-  maxFrequency: 450.0,               // Max frequency (Hz)
-  
-  // Custom tuning (e.g., Drop D)
-  guitarStringFreqs: {
-    'D6': 73.42,   // 6th string dropped to D
-    'A5': 110.00,  // 5th string
-    'D4': 146.83,  // 4th string  
-    'G3': 196.00,  // 3rd string
-    'B2': 246.94,  // 2nd string
-    'E1': 329.63,  // 1st string
-  },
+import 'package:pitch_detection/pitch_detection.dart';
+import 'dart:typed_data';
+
+// Create the service
+final pitchService = PitchEstimationService(
+  sampleRate: 44100.0,
+  minF0: 70.0,    // Minimum frequency (Hz)
+  maxF0: 1000.0,  // Maximum frequency (Hz)
 );
 
-final tuner = GuitarTunerEngine(config);
-```
+// Analyze audio frame (Float64List samples)
+final estimate = pitchService.estimatePitch(audioSamples);
 
-## How It Works
-
-### 1. Audio Capture
-- Records audio at 44.1kHz sample rate in mono
-- Processes audio in 4096-sample buffers for real-time analysis
-- Automatically handles microphone permissions
-
-### 2. FFT Analysis  
-- Performs Fast Fourier Transform on each audio buffer
-- Calculates magnitude spectrum to find frequency peaks
-- Focuses on guitar frequency range (75-450Hz by default)
-
-### 3. Harmonic Validation
-```dart
-// Checks for harmonics at 2f, 3f, 4f, 5f
-for (int harmonic = 2; harmonic <= 5; harmonic++) {
-  final harmonicFreq = fundamental * harmonic;
-  // Looks for significant energy at harmonic frequencies
-  // Rejects sounds without musical harmonic structure
+if (estimate.isVoiced) {
+  print('Detected: ${estimate.note} at ${estimate.f0Hz} Hz');
+  print('Cents deviation: ${estimate.cents}');
+  print('Confidence: ${estimate.confidence}');
+  print('Algorithm used: ${estimate.algorithm}');
+} else {
+  print('Silence detected');
 }
 ```
 
-### 4. Temporal Stability
-- Frequency must remain stable for 80ms (configurable)
-- Prevents detection of brief transient noises
-- Ensures reliable note identification
+### Using Individual Algorithms
 
-### 5. Note Identification
-- Matches detected frequency to closest guitar string
-- Calculates cent offset for tuning accuracy  
-- Determines if note is "in tune" (within ±5 cents)
+```dart
+// YIN Algorithm
+final yinDetector = YinPitchDetector(
+  sampleRate: 44100.0,
+  minF0: 70.0,
+  maxF0: 1000.0,
+);
+
+final yinResult = yinDetector.estimatePitch(audioSamples);
+if (yinResult != null) {
+  print('YIN: ${yinResult.frequency} Hz (confidence: ${yinResult.confidence})');
+}
+
+// MPM Algorithm  
+final mpmDetector = MpmPitchDetector(
+  sampleRate: 44100.0,
+  minF0: 70.0,
+  maxF0: 1000.0,
+);
+
+final mpmResult = mpmDetector.estimatePitch(audioSamples);
+if (mpmResult != null) {
+  print('MPM: ${mpmResult.frequency} Hz (confidence: ${mpmResult.confidence})');
+}
+```
+
+### Real-time Audio Integration
+
+```dart
+import 'package:record/record.dart';
+
+final audioRecorder = AudioRecorder();
+final pitchService = PitchEstimationService(sampleRate: 44100.0);
+
+// Start recording
+const config = RecordConfig(
+  encoder: AudioEncoder.pcm16bits,
+  sampleRate: 44100,
+  numChannels: 1,
+);
+
+final stream = await audioRecorder.startStream(config);
+
+await for (final audioData in stream) {
+  // Convert Uint8List to Float64List
+  final samples = convertToFloat64(audioData);
+  
+  // Analyze pitch
+  final estimate = pitchService.estimatePitch(samples);
+  
+  if (estimate.isVoiced) {
+    print('Note: ${estimate.note} (${estimate.cents}¢)');
+  }
+}
+```
 
 ## API Reference
 
-### TuningResult
+### PitchEstimate
+
+Main result class containing pitch detection information:
 
 ```dart
-class TuningResult {
-  final bool isValid;              // Whether a valid note was detected
-  final double? frequency;         // Detected frequency in Hz
-  final double amplitude;          // Signal amplitude (0.0-1.0+)
-  final bool hasHarmonicStructure; // Whether harmonics were found
-  final bool isStable;            // Whether frequency is stable
-  final String? closestNote;      // Closest guitar string (e.g., "E6")
-  final double? centsOffset;      // Offset in cents (+/-)
-  final bool isInTune;           // Whether note is in tune (±5¢)
-  final String? failureReason;    // Why detection failed
-  final List<double> spectrum;    // FFT spectrum for visualization
+class PitchEstimate {
+  final DateTime timestamp;      // When the estimate was made
+  final double? f0Hz;           // Fundamental frequency in Hz
+  final String? note;           // Musical note (e.g., "E2", "A4")
+  final double? cents;          // Deviation in cents from the note
+  final double confidence;      // Confidence level [0-1]
+  final bool isVoiced;         // Whether a pitch was detected
+  final String algorithm;       // Algorithm used ("YIN", "MPM", or "SILENCE")
 }
 ```
 
-### TunerConfig
+### PitchEstimationService
+
+Main service class with advanced post-processing:
 
 ```dart
-class TunerConfig {
-  final double minAmplitudeThreshold;    // 0.0001 - 0.1
-  final int minHarmonicsRequired;        // 1 - 4  
-  final double harmonicTolerance;        // 0.01 - 0.2 (1%-20%)
-  final Duration stabilityDuration;      // 50ms - 500ms
-  final double minFrequency;             // 50Hz - 150Hz
-  final double maxFrequency;             // 300Hz - 1000Hz
-  final int sampleRate;                  // Audio sample rate
-  final int bufferSize;                  // FFT buffer size (power of 2)
-  final Map<String, double> guitarStringFreqs; // Note frequencies
-}
+PitchEstimationService({
+  required double sampleRate,   // Audio sample rate (Hz)
+  double minF0 = 70.0,         // Minimum frequency to detect
+  double maxF0 = 1000.0,       // Maximum frequency to detect
+})
+
+// Methods
+PitchEstimate estimatePitch(Float64List audioFrame);
+Map<String, dynamic> getPerformanceStats();
+void reset();
 ```
 
-## Permissions
+### YinPitchDetector
 
-Add to your `android/app/src/main/AndroidManifest.xml`:
+YIN algorithm implementation:
 
-```xml
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
-<uses-permission android:name="android.permission.MICROPHONE" />
+```dart
+YinPitchDetector({
+  required double sampleRate,
+  double minF0 = 70.0,
+  double maxF0 = 1000.0,
+  double troughThreshold = 0.15,
+})
+
+({double frequency, double confidence})? estimatePitch(Float64List audioFrame);
 ```
 
-For iOS, add to `ios/Runner/Info.plist`:
+### MpmPitchDetector
 
-```xml
-<key>NSMicrophoneUsageDescription</key>
-<string>This app needs microphone access to detect guitar notes for tuning.</string>
+MPM (McLeod Pitch Method) implementation:
+
+```dart
+MpmPitchDetector({
+  required double sampleRate,
+  double minF0 = 70.0,
+  double maxF0 = 1000.0,
+  double clarityThreshold = 0.75,
+})
+
+({double frequency, double confidence})? estimatePitch(Float64List audioFrame);
 ```
+
+## Algorithms
+
+### YIN Algorithm
+- **Reference**: "YIN, a fundamental frequency estimator for speech and music" (2002)
+- **Strengths**: Excellent for monophonic signals, stable results
+- **Use case**: Guitar tuning, vocal analysis
+
+### MPM Algorithm  
+- **Reference**: "A Smarter Way to Find Pitch" (McLeod & Wyvill, 2005)
+- **Strengths**: Good harmonic content handling, FFT-optimized
+- **Use case**: Complex instruments, polyphonic signals
 
 ## Performance Tips
 
-- **Buffer Size**: Larger buffers (8192) give better frequency resolution but slower response
-- **Sample Rate**: 44.1kHz is optimal for guitars; higher rates don't improve accuracy
-- **Stability Duration**: Increase for noisy environments, decrease for faster response
-- **Harmonic Requirements**: More harmonics = better noise rejection but may miss quiet notes
+1. **Frame Size**: Use 2048-4096 samples for best accuracy
+2. **Sample Rate**: 44.1 kHz recommended for musical applications  
+3. **Frequency Range**: Tune `minF0`/`maxF0` to your specific instrument
+4. **Memory**: Service maintains small history buffers for stability
 
-## Troubleshooting
+## Example App
 
-**No notes detected:**
-- Check microphone permissions
-- Ensure guitar is loud enough (increase sensitivity or decrease `minAmplitudeThreshold`)  
-- Try the "quiet" preset: `TunerConfig.quiet()`
-
-**False positives from noise:**
-- Use "noisy environment" preset: `TunerConfig.noisyEnvironment()`
-- Increase `minHarmonicsRequired` to 3 or 4
-- Increase `stabilityDuration` to 150ms+
-
-**Slow response:**
-- Decrease `stabilityDuration` to 50ms
-- Decrease `bufferSize` to 2048 (may reduce accuracy)
-- Use fewer required harmonics
-
-## Example Project
-
-See the `/example` folder for a complete Flutter app demonstrating all features:
-
-- Configuration preset switching  
-- Real-time tuning display
-- Frequency spectrum visualization
-- Configuration parameter details
-
-## Contributing
-
-Contributions welcome! Please read our contributing guidelines and submit pull requests to our GitHub repository.
+See the `/example` directory for a complete Flutter app demonstrating real-time pitch detection with microphone input.
 
 ## License
 
-MIT License - see LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

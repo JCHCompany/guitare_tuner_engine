@@ -1,3 +1,14 @@
+## 1.1.0
+
+Enhancements:
+- Adaptive silence threshold via RMS history (AmplitudeTracker)
+- Note locking with cents hysteresis + anti-octave protection
+- Harmonic coherence score to weight confidence
+- Improved end-of-note stability and reduced octave flips
+
+Notes:
+- Public APIs unchanged. Behavior is more stable in low-amplitude tails.
+
 # Changelog
 
 All notable changes to the pitch_detection package will be documented in this file.

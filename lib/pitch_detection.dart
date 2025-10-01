@@ -7,3 +7,4 @@ export 'src/algorithms/mpm_detector.dart';
 
 // Services
 export 'src/services/pitch_estimation_service.dart';
+export 'src/services/adaptive_pitch_estimation_service.dart';

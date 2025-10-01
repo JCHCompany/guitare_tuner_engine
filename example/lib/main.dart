@@ -34,7 +34,7 @@ class PitchDetectionDemo extends StatefulWidget {
 class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   late final PitchEstimationService _pitchService;
-  
+
   bool _isListening = false;
   PitchEstimate? _currentEstimate;
   String _statusMessage = 'Appuyez pour commencer l\'écoute';
@@ -44,7 +44,7 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
   @override
   void initState() {
     super.initState();
-    
+
     _pitchService = PitchEstimationService(
       sampleRate: sampleRate,
       minF0: 70.0,
@@ -88,7 +88,7 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
       );
 
       final stream = await _audioRecorder.startStream(config);
-      
+
       setState(() {
         _isListening = true;
         _statusMessage = 'Écoute en cours...';
@@ -97,7 +97,7 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
       // Traiter le stream audio
       await for (final audioData in stream) {
         if (!_isListening) break;
-        
+
         _processAudioData(audioData);
       }
     } catch (e) {
@@ -120,10 +120,10 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
     try {
       // Convertir bytes en Float64List
       final samples = _convertToFloat64(audioData);
-      
+
       // Analyser avec le service de pitch detection
       final estimate = _pitchService.estimatePitch(samples);
-      
+
       setState(() {
         _currentEstimate = estimate;
       });
@@ -137,13 +137,13 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
   Float64List _convertToFloat64(Uint8List audioData) {
     // Conversion PCM 16-bit vers Float64
     final samples = Float64List(audioData.length ~/ 2);
-    
+
     for (int i = 0; i < samples.length; i++) {
       final int16Value = (audioData[i * 2 + 1] << 8) | audioData[i * 2];
       final normalizedValue = int16Value.toSigned(16) / 32768.0;
       samples[i] = normalizedValue;
     }
-    
+
     return samples;
   }
 
@@ -171,7 +171,7 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
 
               // Résultats de détection
@@ -228,7 +228,8 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
             children: [
               Icon(Icons.volume_off, size: 48, color: Colors.grey),
               SizedBox(height: 8),
-              Text('SILENCE', style: TextStyle(fontSize: 18, color: Colors.grey)),
+              Text('SILENCE',
+                  style: TextStyle(fontSize: 18, color: Colors.grey)),
             ],
           ),
         ),
@@ -266,17 +267,17 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
                 color: noteColor,
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Fréquence
             Text(
-              '${frequency.toStringAsFixed(1)} Hz',
+              '${frequency.toStringAsFixed(2)} Hz',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Cents
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -291,9 +292,9 @@ class _PitchDetectionDemoState extends State<PitchDetectionDemo> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Informations techniques
             Text(
               'Algorithme: $algorithm',

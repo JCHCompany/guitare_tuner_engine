@@ -2,9 +2,45 @@
 
 A Flutter package for real-time pitch detection using YIN and MPM algorithms, optimized for musical instruments.
 
+Now with:
+- Adaptive silence threshold based on recent RMS
+- Note locking with hysteresis and anti-octave protection
+- Harmonic coherence weighting for more reliable confidence
+
 ## Features
 
 - **Dual Algorithm Support**: YIN and MPM algorithms for robust pitch detection
+### Diagnostic avancé (mode debug)
+
+Pour diagnostiquer les instabilités ou sauts harmoniques, activez le mode debug sur le service adaptatif :
+
+```dart
+import 'package:pitch_detection/pitch_detection.dart';
+
+final pitchService = AdaptivePitchEstimationService(
+  sampleRate: 44100.0,
+  minF0: 70.0,
+  maxF0: 1000.0,
+  debugDiagnostics: true, // Active le mode debug
+  diagnosticsCallback: (Map<String, dynamic> diag) {
+    // Ici, vous pouvez logger, afficher ou transmettre les diagnostics
+    print(diag);
+    // Pour analyse experte, sauvegardez les diagnostics dans un fichier ou envoyez-les à l'équipe support
+  },
+);
+```
+
+À chaque frame, le callback reçoit une map détaillée :
+
+- timestamp, note, frequency, rms, profileName, adaptiveSilenceThreshold
+- profileMinFloor, profileAmpRatio, profileDebounceFrames, silentFrames
+- recentMax, harmonicScore, ampFactor, rawConfidence, adjustedConfidence
+- locked, emaF0, emaConfidence, inMuteTransition, lastAmplitude, lastFrequency
+- ratioToLast, activeProfile
+
+Utilisez ce mode pour capturer les métriques lors de tests sur les cordes problématiques (E2, A2, D3, G3, E4) et partagez les logs pour une analyse approfondie.
+
+---
 - **Real-time Processing**: Optimized for low-latency audio analysis
 - **Post-processing Pipeline**: Anti-octave protection, median filtering, outlier detection
 - **Musical Optimization**: Specifically tuned for guitar and other musical instruments
@@ -16,7 +52,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  pitch_detection: ^1.0.0
+  pitch_detection: ^1.1.0
 ```
 
 Then run:
@@ -27,13 +63,14 @@ flutter pub get
 
 ## Usage
 
+
 ### Basic Pitch Detection
 
 ```dart
 import 'package:pitch_detection/pitch_detection.dart';
 import 'dart:typed_data';
 
-// Create the service
+// Create the service (default config)
 final pitchService = PitchEstimationService(
   sampleRate: 44100.0,
   minF0: 70.0,    // Minimum frequency (Hz)
@@ -52,6 +89,48 @@ if (estimate.isVoiced) {
   print('Silence detected');
 }
 ```
+
+### Advanced: Custom Sensitivity & Stability
+
+Vous pouvez ajuster la sensibilité, la stabilité et le comportement du service en passant des paramètres optionnels au constructeur :
+
+```dart
+final pitchService = PitchEstimationService(
+  sampleRate: 44100.0,
+  minF0: 70.0,
+  maxF0: 1000.0,
+  // Amplitude/silence detection
+  ampMinThreshold: 0.000001, // plus bas = plus sensible aux faibles volumes
+  ampRatioOfRecentMax: 0.01, // plus bas = seuil adaptatif plus réactif
+  ampHistorySize: 32,        // plus grand = seuil plus stable
+  // Note locking
+  lockMinConfidenceToLock: 0.5, // plus bas = accepte plus facilement une note
+  lockCentsHysteresis: 8.0,     // plus haut = moins de changements de note
+  lockHoldMsAfterSilence: 800,  // plus haut = note affichée plus longtemps après la fin
+  // Post-traitement
+  historySize: 10,           // historique pour le filtre médian
+  medianFilterSize: 5,       // taille du filtre médian
+  // Silence debounce
+  silentDebounceFrames: 1,   // plus bas = détection plus rapide
+  // Attack stabilization (new)
+  attackStabilizationFrames: 4, // nombre de frames pour stabiliser l'attaque (réduit le sautillement)
+  attackTimeoutMs: 200, // timeout (ms) pour considérer une nouvelle attaque
+);
+```
+
+**Paramètres principaux modifiables** :
+
+- `ampMinThreshold` : seuil RMS plancher (plus bas = plus sensible)
+- `ampRatioOfRecentMax` : ratio du max récent pour le seuil adaptatif
+- `ampHistorySize` : taille de l’historique RMS
+- `lockMinConfidenceToLock` : confiance minimale pour verrouiller une note
+- `lockCentsHysteresis` : écart en cents pour changer de note
+- `lockHoldMsAfterSilence` : durée de maintien de la note après silence (ms)
+- `historySize` : historique pour le post-traitement (filtre médian)
+- `medianFilterSize` : taille du filtre médian
+- `silentDebounceFrames` : nombre de frames consécutifs sous le seuil pour couper
+
+Adaptez ces valeurs selon votre instrument, environnement et besoin de stabilité ou de réactivité.
 
 ### Using Individual Algorithms
 
